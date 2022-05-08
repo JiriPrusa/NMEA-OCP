@@ -1,0 +1,13 @@
+GRO folder contains input structures
+INP folder contains all simulaiton configuration file
+par folder contains ff parameters for md run
+toppar folder contains ff topology and parameters (redundancy with par folder)
+prepare_batch_charmm.sh is a bash script to run for preparation of the system
+execute_batch.sh is a bash script that put a job to pbs schedulling system 
+###########################################################################
+# Prepare simulations
+./prepare_batch_charmm.sh 015
+# schedulle the eq. part of simulations
+./execute_batch_charmm.sh
+# schedulle prod run
+./execute_charmm_md.sh

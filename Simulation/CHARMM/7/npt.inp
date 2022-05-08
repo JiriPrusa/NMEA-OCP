@@ -1,0 +1,164 @@
+set BOXSIZEX 84.000000 
+set BOXSIZEY 84.000000 
+set BOXSIZEZ 84.000000 
+set GRIDSIZEX 90 
+set GRIDSIZEY 90
+set GRIDSIZEZ 90
+
+proc get_step {} {
+  set fd [open "step.num" r]
+  gets $fd line
+  set ts [lindex $line 0] 
+  close $fd
+  return $ts 
+}
+
+proc set_step {step} {
+  set fd [open "step.num" w]
+  puts $fd $step
+  close $fd
+}
+
+# get timestep from xsc file
+proc get_first_ts { xscfile } {
+  set fd [open $xscfile r]
+  gets $fd
+  gets $fd
+  gets $fd line
+  set ts [lindex $line 0]
+  close $fd
+  return $ts
+} 
+ 
+set CYCLES  10000000
+set MACROCYCLES 5
+
+# molecular system
+structure start.psf
+coordinates start.pdb  
+
+# First check in which step we are
+if [file exists "step.num"] {
+    # So this is the first production run
+    set last_step [get_step] 
+    set c_step [expr $last_step + 1]
+} else {
+    # We continue with production run
+    set c_step 0    
+}
+# Anyway we write actual step to step counting file 
+set_step $c_step
+
+# Proceed accordingly while reading binary input
+if {$c_step == 0} {
+    # This case is the first run
+    bincoordinates eq_out/equil_ca.coor
+    binvelocities eq_out/equil_ca.vel
+    extendedSystem eq_out/equil_ca.xsc
+    firsttimestep 0
+} else {
+    # This case is continuation
+    if [file exists "output_npt/fin.${last_step}.xst"] {
+        # Previous run had finished
+        set firsttime [get_first_ts "output_npt/fin.${last_step}.xst"]
+        bincoordinates output_npt/fin.${last_step}.coor
+        binvelocities output_npt/fin.${last_step}.vel
+        extendedSystem output_npt/fin.${last_step}.xsc
+        firsttimestep $firsttime
+    } else {
+        # Previous run had not finished
+        set firsttime [get_first_ts "output_npt/npt_restart.xsc"]
+        bincoordinates output_npt/npt_restart.coor
+        binvelocities output_npt/npt_restart.vel
+        extendedSystem output_npt/npt_restart.xsc
+        firsttimestep $firsttime
+    }
+    # Note: we do not treat whether restart files are corrupted!
+}
+
+# Key input and output files
+outputname output_npt/fin.${c_step}
+restartname output_npt/npt_restart
+XSTfile output_npt/cell_params_npt.${c_step}.dat
+
+# Key output frequencies -- this script works best if they're all equal
+dcdfreq        5000000
+restartfreq    50000
+outputenergies 50000
+outputTiming   50000
+XSTfreq        50000
+
+stepsPerCycle  20
+
+# restart files
+binaryrestart yes
+
+#forcefield
+paratypecharmm on
+parameters ./par/par_all36_prot_mod.prm
+parameters ./par/par_all36_lipid.prm
+parameters ./par/par_all36_carb.prm
+parameters ./par/par_all36_cgenff.prm
+parameters ./par/toppar_water_ions_namd.str
+parameters ./par/ech.prm
+
+
+exclude scaled1-4
+1-4scaling 1.0
+
+switching on
+switchdist 9
+cutoff 10
+pairlistdist 12
+
+#integrator
+timestep 2.0
+
+#output 
+binaryoutput yes
+
+# center of mass motion
+COMmotion no
+zeroMomentum yes
+
+# turn on shake
+rigidBonds all
+rigidTolerance 0.0000000001
+useSettle on
+
+# PME: can probably safely drop this to 96 x 96 x 96 -- check timing
+PME on
+PMEGridSizeX $GRIDSIZEX
+PMEGridSizeY $GRIDSIZEY
+PMEGridSizeZ $GRIDSIZEZ
+
+# periodic boundary
+
+# Box updated from full_system_0.pdb
+cellBasisVector1 $BOXSIZEX 0 0
+cellBasisVector2 0 $BOXSIZEY 0
+cellBasisVector3 0 0 $BOXSIZEZ
+wrapAll on  # turn on reimaging
+
+# temperature control
+langevin on
+langevinTemp 300
+langevinDamping 2
+langevinHydrogen off
+
+# pressure control
+LangevinPiston on
+LangevinPistonTarget 1.01325 # 1 atm
+LangevinPistonPeriod 200
+LangevinPistonDecay 100
+LangevinPistonTemp 300
+useFlexibleCell no
+useConstantArea no
+
+LdbPeriod 20000
+
+LdbUnloadPme yes
+
+for { set i 1 } { $i <= $MACROCYCLES } { incr i 1 } {
+   run $CYCLES
+}

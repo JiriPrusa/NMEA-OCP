@@ -1,0 +1,10 @@
+GRO folder contains input structures
+MDP folder contains all simulaiton configuration file
+ITP folder contains topology and ff parameters 
+prepare_batch.sh is a bash script to run for preparation of the system
+execute_batch.sh is a bash script that put a job to pbs schedulling system 
+###########################################################################
+# Prepare simulations
+./prepare_batch.sh 025
+# schedulle the simulations
+./execute_batch.sh 025
