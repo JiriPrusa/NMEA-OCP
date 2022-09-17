@@ -1,0 +1,15 @@
+define = -DFLEXIBLE
+integrator  = nm         ; Algorithm (steep = steepest descent minimization)
+; Parameters describing how to find the neighbors of each atom and how to calculate the interactions
+constraints = None
+nstlist         = 5         ; Frequency to update the neighbor list and long range forces
+cutoff-scheme   = Verlet    ; Buffered neighbor searching
+coulombtype = Reaction-Field
+coulomb-modifier = Potential-shift
+epsilon-rf      = 0
+rcoulomb        = 1.2  
+rlist           = 1.4
+rvdw            = 1.2       ; Short-range Van der Waals cut-off
+vdwtype         = Cut-off
+vdw-modifier    = Potential-shift
+pbc             = xyz       ; Periodic Boundary Conditions in all 3 dimensions

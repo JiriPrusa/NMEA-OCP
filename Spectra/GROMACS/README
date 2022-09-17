@@ -1,0 +1,14 @@
+# scripts to prepare and run nma on gromacs produced trajectories
+# copy templ.top to ITP folder and writePWgro.tcl to proper place
+# copy nma_min.mdp and nma.mdp to MDP folder
+# copy run_nma_metacentrum.sh to folder within PATH
+# run prepare_nma.sh - copy template topology, reference frame
+                     - center protein within MD trajectory
+                     - extract frames with waters around, align them to reference, prepare topology (processTraj.tcl)
+# run execute_nma_min.sh - copy starting structure, topology and parameters to individual directories
+                         - run minimization and hessian calculation
+# run execute_diag.sh - check if Hessian file exists
+                      - run Hessian diagonalization
+# check if finished, harvest solution (check_diag.sh, harvest_diag.sh)
+# Calculate the isotropic and/or anisotropic spectra by python scripts
+# calcSpectra.py
